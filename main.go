@@ -1,31 +1,45 @@
 package main
 
 import (
-	"fmt"
 	"gator/internal/config"
+	"log"
 	"os"
 )
 
-// Read the config file again and print the contents of the config struct to the terminal.
+type state struct {
+	cfg *config.Config
+}
+
 func main() {
 	cfg, err := config.Read()
 	if err != nil {
-		fmt.Println("Error reading config:", err)
-		os.Exit(1)
+		log.Fatalf("error reading config: %v", err)
 	}
 
-	err = cfg.SetUser("Lance")
+	programState := &state{cfg: &cfg}
 
+	cmds := commands{
+		registeredCommands: make(map[string]func(*state, command) error),
+	}
+	cmds.register("login", handlerLogin)
+
+	args := os.Args
+	// If there are fewer than 2 arguments, print an error message to the terminal and exit.
+	// Why two? The first argument is automatically the program name, which we ignore, and we require a command name.
+	if len(args) < 2 {
+		log.Fatal("Usage: cli <command> [args...]")
+		return
+	}
+
+	// You'll need to split the command-line arguments into the command name and the arguments slice to create a command instance.
+	// Use the commands.run method to run the given command and print any errors returned.
+	cmd := command{
+		Name: args[1],
+		Args: args[2:],
+	}
+
+	err = cmds.run(programState, cmd)
 	if err != nil {
-		fmt.Println("Error writing config:", err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
-
-	cfg, err = config.Read()
-	if err != nil {
-		fmt.Println("Error reading config:", err)
-		os.Exit(1)
-	}
-
-	fmt.Printf("Config: %+v\n", cfg)
 }
