@@ -10,5 +10,9 @@ VALUES (
 RETURNING *;
 
 
+-- name: DeleteUsers :exec
+DELETE FROM users;
+
+
 -- name: GetUser :one
 SELECT * FROM users WHERE name = $1;
