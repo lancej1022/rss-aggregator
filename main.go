@@ -1,13 +1,18 @@
 package main
 
 import (
+	"database/sql"
 	"gator/internal/config"
+	"gator/internal/database"
 	"log"
 	"os"
+
+	_ "github.com/lib/pq"
 )
 
 type state struct {
 	cfg *config.Config
+	db  *database.Queries
 }
 
 func main() {
@@ -16,12 +21,20 @@ func main() {
 		log.Fatalf("error reading config: %v", err)
 	}
 
-	programState := &state{cfg: &cfg}
+	db, err := sql.Open("postgres", cfg.DbUrl)
+	if err != nil {
+		log.Fatalf("error opening database connection: %v", err)
+	}
+	defer db.Close()
+	dbQueries := database.New(db)
+
+	programState := &state{cfg: &cfg, db: dbQueries}
 
 	cmds := commands{
 		registeredCommands: make(map[string]func(*state, command) error),
 	}
 	cmds.register("login", handlerLogin)
+	cmds.register("register", handleRegister)
 
 	args := os.Args
 	// If there are fewer than 2 arguments, print an error message to the terminal and exit.
@@ -31,8 +44,6 @@ func main() {
 		return
 	}
 
-	// You'll need to split the command-line arguments into the command name and the arguments slice to create a command instance.
-	// Use the commands.run method to run the given command and print any errors returned.
 	cmd := command{
 		Name: args[1],
 		Args: args[2:],
