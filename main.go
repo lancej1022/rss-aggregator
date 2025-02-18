@@ -36,6 +36,8 @@ func main() {
 	cmds.register("login", handlerLogin)
 	cmds.register("register", handleRegister)
 	cmds.register("reset", handleReset)
+	cmds.register("users", handleListUsers)
+	cmds.register("agg", handleAggregate)
 
 	args := os.Args
 	// If there are fewer than 2 arguments, print an error message to the terminal and exit.
