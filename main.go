@@ -38,6 +38,7 @@ func main() {
 	cmds.register("reset", handleReset)
 	cmds.register("users", handleListUsers)
 	cmds.register("agg", handleAggregate)
+	cmds.register("addfeed", handleAddFeed)
 
 	args := os.Args
 	// If there are fewer than 2 arguments, print an error message to the terminal and exit.
