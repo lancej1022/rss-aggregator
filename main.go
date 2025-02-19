@@ -40,6 +40,8 @@ func main() {
 	cmds.register("agg", handleAggregate)
 	cmds.register("addfeed", handleAddFeed)
 	cmds.register("feeds", handleGetFeeds)
+	cmds.register("follow", handleFollowFeed)
+	cmds.register("following", handleFollowing)
 
 	args := os.Args
 	// If there are fewer than 2 arguments, print an error message to the terminal and exit.
