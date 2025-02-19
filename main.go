@@ -38,10 +38,13 @@ func main() {
 	cmds.register("reset", handleReset)
 	cmds.register("users", handleListUsers)
 	cmds.register("agg", handleAggregate)
-	cmds.register("addfeed", handleAddFeed)
+	// cmds.register("addfeed", handleAddFeed)
+	cmds.register("addfeed", middlewareLoggedIn(handleAddFeed))
 	cmds.register("feeds", handleGetFeeds)
-	cmds.register("follow", handleFollowFeed)
-	cmds.register("following", handleFollowing)
+	// cmds.register("follow", handleFollowFeed)
+	cmds.register("follow", middlewareLoggedIn(handleFollowFeed))
+	// cmds.register("following", handleFollowing)
+	cmds.register("following", middlewareLoggedIn(handleFollowing))
 
 	args := os.Args
 	// If there are fewer than 2 arguments, print an error message to the terminal and exit.

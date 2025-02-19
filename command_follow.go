@@ -9,13 +9,9 @@ import (
 	"github.com/google/uuid"
 )
 
-func handleFollowFeed(s *state, cmd command) error {
+func handleFollowFeed(s *state, cmd command, user database.User) error {
 	if len(cmd.Args) != 1 {
 		return fmt.Errorf("usage: %s <feed_url>", cmd.Name)
-	}
-	currUser, err := s.db.GetUser(context.Background(), s.cfg.CurrentUserName) // TODO: idk if this is right...
-	if err != nil {
-		return fmt.Errorf("couldn't get current user: %w", err)
 	}
 
 	feedUrl := cmd.Args[0]
@@ -28,7 +24,7 @@ func handleFollowFeed(s *state, cmd command) error {
 		ID:        uuid.New(),
 		CreatedAt: time.Now().UTC(),
 		UpdatedAt: time.Now().UTC(),
-		UserID:    currUser.ID,
+		UserID:    user.ID,
 		FeedID:    feed.ID,
 	})
 	if err != nil {
@@ -41,17 +37,12 @@ func handleFollowFeed(s *state, cmd command) error {
 }
 
 // print all the names of the feeds the current user is following.
-func handleFollowing(s *state, cmd command) error {
+func handleFollowing(s *state, cmd command, user database.User) error {
 	if len(cmd.Args) != 0 {
 		return fmt.Errorf("usage: %s", cmd.Name)
 	}
 
-	currUser, err := s.db.GetUser(context.Background(), s.cfg.CurrentUserName)
-	if err != nil {
-		return fmt.Errorf("couldn't get current user: %w", err)
-	}
-
-	feedFollows, err := s.db.GetFeedFollowsForUser(context.Background(), currUser.ID)
+	feedFollows, err := s.db.GetFeedFollowsForUser(context.Background(), user.ID)
 	if err != nil {
 		return fmt.Errorf("couldn't get feedFollows: %w", err)
 	}
@@ -61,7 +52,7 @@ func handleFollowing(s *state, cmd command) error {
 		return nil
 	}
 
-	fmt.Printf("Feed follows for user %s:\n", currUser.Name)
+	fmt.Printf("Feed follows for user %s:\n", user.Name)
 	for _, f := range feedFollows {
 		fmt.Printf("* %s\n", f.FeedName)
 	}
