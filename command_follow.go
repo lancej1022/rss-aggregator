@@ -58,3 +58,16 @@ func handleFollowing(s *state, cmd command, user database.User) error {
 	}
 	return nil
 }
+
+// accepts a feed's URL as an argument and unfollows it for the current user.
+// This is, of course, a "logged in" command - use the new middleware.
+func handleUnfollow(s *state, cmd command, user database.User) error {
+	if len(cmd.Args) != 1 {
+		return fmt.Errorf("usage: %s <feed_url>", cmd.Name)
+	}
+	s.db.DeleteFeedFollowByUserAndFeedUrl(context.Background(), database.DeleteFeedFollowByUserAndFeedUrlParams{
+		UserID: user.ID,
+		Url:    cmd.Args[0],
+	})
+	return nil
+}

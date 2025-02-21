@@ -27,4 +27,14 @@ SELECT
 FROM feed_follows
 INNER JOIN feeds ON feed_follows.feed_id = feeds.id
 INNER JOIN users ON feed_follows.user_id = users.id
-WHERE feed_follows.user_id = $1; -- TODO: originally tried `user_id = $1` but got error `column reference "user_id" is ambiguous`
+WHERE feed_follows.user_id = $1;
+
+-- Add a new SQL query to delete a feed follow record by user and feed url combination.
+-- name: DeleteFeedFollowByUserAndFeedUrl :exec
+DELETE FROM feed_follows
+WHERE feed_follows.user_id = $1
+AND feed_follows.feed_id = (
+    SELECT id
+    FROM feeds
+    WHERE url = $2
+);
