@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"gator/internal/database"
+	"log"
 	"time"
 
 	"github.com/google/uuid"
@@ -43,13 +44,6 @@ func handleAddFeed(s *state, cmd command, user database.User) error {
 	return nil
 }
 
-/*
-It takes no arguments and prints all the feeds in the database to the console. Be sure to include:
-
-The name of the feed
-The URL of the feed
-The name of the user that created the feed (you might need a new SQL query)
-*/
 func handleGetFeeds(s *state, cmd command) error {
 	feeds, err := s.db.GetFeeds(context.Background())
 	if err != nil {
@@ -79,4 +73,33 @@ func printFeed(feed database.Feed, user database.User) {
 	fmt.Printf("* Name:          %s\n", feed.Name)
 	fmt.Printf("* URL:           %s\n", feed.Url)
 	fmt.Printf("* User:          %s\n", user.Name)
+}
+
+func scrapeFeeds(s *state) error {
+	// if len(cmd.Args) != 0 {
+	// 	return fmt.Errorf("usage: %s", cmd.Name)
+	// }
+
+	feed, err := s.db.GetNextFeedToFetch(context.Background())
+	if err != nil {
+		return fmt.Errorf("couldn't get next feed to fetch: %w", err)
+	}
+
+	_, err = s.db.MarkFeedFetched(context.Background(), feed.ID)
+	if err != nil {
+		return fmt.Errorf("couldn't mark feed as fetched: %w", err)
+	}
+
+	rssFeed, err := fetchFeed(context.Background(), feed.Url)
+	if err != nil {
+		return fmt.Errorf("couldn't get feed: %w", err)
+	}
+	// Iterate over the items in the feed and print their titles to the console.
+	for _, item := range rssFeed.Channel.Item {
+		fmt.Printf("Found post: %s\n", item.Title)
+	}
+	log.Printf("Feed %s collected, %v posts found", feed.Name, len(rssFeed.Channel.Item))
+
+	return nil
+
 }

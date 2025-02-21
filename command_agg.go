@@ -65,13 +65,21 @@ func fetchFeed(ctx context.Context, feedURL string) (*RSSFeed, error) {
 }
 
 func handleAggregate(s *state, cmd command) error {
-	if len(cmd.Args) != 0 {
-		return fmt.Errorf("usage: %s", cmd.Name)
+	if len(cmd.Args) != 1 {
+		return fmt.Errorf("usage: %s <time_between_reqs>", cmd.Name)
 	}
-	feed, err := fetchFeed(context.Background(), "https://www.wagslane.dev/index.xml")
+	interval, err := time.ParseDuration(cmd.Args[0])
 	if err != nil {
-		return fmt.Errorf("couldn't fetch feed: %w", err)
+		return fmt.Errorf("couldn't parse duration: %w", err)
 	}
-	fmt.Printf("%v\n", feed)
-	return nil
+	fmt.Printf("Collecting feeds every %v\n", interval)
+
+	// use time.Ticker to run the scrapeFeeds function every interval.
+	ticker := time.NewTicker(interval)
+	for ; ; <-ticker.C {
+		err := scrapeFeeds(s)
+		if err != nil {
+			return fmt.Errorf("couldn't scrape feeds: %w", err)
+		}
+	}
 }
