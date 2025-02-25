@@ -53,7 +53,7 @@ func fetchFeed(ctx context.Context, feedURL string) (*RSSFeed, error) {
 	if err != nil {
 		return nil, err
 	}
-	// You'll need to run the Title and Description fields (of both the entire channel as well as the items) through this function.
+
 	rssFeed.Channel.Title = html.UnescapeString(rssFeed.Channel.Title)
 	rssFeed.Channel.Description = html.UnescapeString(rssFeed.Channel.Description)
 	for i := range rssFeed.Channel.Item {
@@ -74,7 +74,6 @@ func handleAggregate(s *state, cmd command) error {
 	}
 	fmt.Printf("Collecting feeds every %v\n", interval)
 
-	// use time.Ticker to run the scrapeFeeds function every interval.
 	ticker := time.NewTicker(interval)
 	for ; ; <-ticker.C {
 		err := scrapeFeeds(s)

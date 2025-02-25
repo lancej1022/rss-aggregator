@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"gator/internal/database"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -30,7 +32,7 @@ func handleAddFeed(s *state, cmd command, user database.User) error {
 		return fmt.Errorf("couldn't create feed: %w", err)
 	}
 	fmt.Printf("Successfully created feed %v\n", feed)
-	// It should now automatically create a feed follow record for the current user when they add a feed.
+
 	_, err = s.db.CreateFeedFollow(context.Background(), database.CreateFeedFollowParams{
 		ID:        uuid.New(),
 		CreatedAt: time.Now().UTC(),
@@ -73,33 +75,58 @@ func printFeed(feed database.Feed, user database.User) {
 	fmt.Printf("* Name:          %s\n", feed.Name)
 	fmt.Printf("* URL:           %s\n", feed.Url)
 	fmt.Printf("* User:          %s\n", user.Name)
+	fmt.Printf("* LastFetchedAt: %v\n", feed.LastFetchedAt.Time)
 }
 
-func scrapeFeeds(s *state) error {
-	// if len(cmd.Args) != 0 {
-	// 	return fmt.Errorf("usage: %s", cmd.Name)
-	// }
-
+func scrapeFeeds(s *state) {
 	feed, err := s.db.GetNextFeedToFetch(context.Background())
 	if err != nil {
-		return fmt.Errorf("couldn't get next feed to fetch: %w", err)
+		log.Printf("couldn't get next feed to fetch: %w", err)
+		return
 	}
+	log.Println("Scraping feed", feed.Name)
+	scrapeFeed(s.db, feed)
 
-	_, err = s.db.MarkFeedFetched(context.Background(), feed.ID)
-	if err != nil {
-		return fmt.Errorf("couldn't mark feed as fetched: %w", err)
-	}
+}
 
+func scrapeFeed(db *database.Queries, feed database.Feed) {
 	rssFeed, err := fetchFeed(context.Background(), feed.Url)
 	if err != nil {
-		return fmt.Errorf("couldn't get feed: %w", err)
+		log.Printf("couldn't get feed: %w", err)
+		return
 	}
-	// Iterate over the items in the feed and print their titles to the console.
+
 	for _, item := range rssFeed.Channel.Item {
-		fmt.Printf("Found post: %s\n", item.Title)
+		publishedAt := sql.NullTime{}
+		if t, err := time.Parse(time.RFC1123Z, item.PubDate); err == nil {
+			publishedAt = sql.NullTime{
+				Time:  t,
+				Valid: true,
+			}
+		}
+
+		_, err := db.CreatePost(context.Background(), database.CreatePostParams{
+			ID:        uuid.New(),
+			CreatedAt: time.Now().UTC(),
+			UpdatedAt: time.Now().UTC(),
+			FeedID:    feed.ID,
+			Title:     item.Title,
+			Url:       item.Link,
+			Description: sql.NullString{
+				String: item.Description,
+				Valid:  true,
+			},
+			PublishedAt: publishedAt,
+		})
+
+		if err != nil {
+			if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+				continue
+			}
+			log.Printf("Couldn't create post: %v", err)
+			continue
+		}
 	}
+
 	log.Printf("Feed %s collected, %v posts found", feed.Name, len(rssFeed.Channel.Item))
-
-	return nil
-
 }
